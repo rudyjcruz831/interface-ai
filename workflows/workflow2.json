@@ -1,0 +1,13 @@
+[
+    {"Action" : "type", "Target": "Username", "Value": ""},
+    {"Action": "type", "Target": "Password", "Value" : ""},
+    {"Action": "click", "Target": "Log in button", "Value" : ""},
+    {"Action": "verify", "Target": "Account Overview", "Value": ""},
+
+    {"Action":"click" , "Target":"Transfer Fund under Acvcount Service", "Value": "" },
+    {"Action": "verify", "Target": "Transfer Funds", "Value": ""},
+    {"Action": "type", "Target": "Amount", "Value": ""},
+    {"Action": "verify", "Target": "Account Overview", "Value": ""}
+
+    
+]

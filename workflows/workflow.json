@@ -1,0 +1,7 @@
+[
+    {"Action": "type", "Target": "Member ID field", "Value": "12344"},
+    {"Action": "click", "Target": "Search button", "Value": ""},
+    {"Action": "read", "Target": "Balance field", "Value": ""}
+]
+
+
