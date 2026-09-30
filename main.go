@@ -38,7 +38,7 @@ func main() {
 	// 	{Action: "read", Target: "Balance field", Value: ""},
 	// }
 
-	imagesBytes, err := os.ReadFile("images/p.png")
+	imagesBytes, err := os.ReadFile("images/p2.png")
 	if err != nil {
 		fmt.Println("Error reading image file:", err)
 		return
@@ -52,7 +52,7 @@ func main() {
 	imageURL := "data:image/png;base64," + encodeToBase64(imagesBytes)
 	// Call the GetAI function to initialize the AI client and tools.
 
-	model.GetAI(imageURL)
+	model.GetAI(imageURL, "Login to the application")
 
 	// Run from this file's folder; workflow.json is two folders above it.
 	// data, err := os.ReadFile("workflows/workflow.json")
