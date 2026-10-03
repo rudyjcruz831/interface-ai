@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -18,33 +19,32 @@ type Step struct {
 	Value  string
 }
 
-func click(target string) {
-	fmt.Println("Clicking:", target)
-}
-
-func read(target string) {
-	fmt.Println("Reading:", target)
-}
-
-func typeText(target, value string) {
-	fmt.Printf("Target: %s, Value: %s\n", target, value)
-}
-
 func main() {
-	// Target names are simplified for this exercise.
-	// steps := []Step{
-	// 	{Action: "type", Target: "Memmber id field", Value: "12344"},
-	// 	{Action: "click", Target: "Search button", Value: ""},
-	// 	{Action: "read", Target: "Balance field", Value: ""},
-	// }
 
-	imagesBytes, err := os.ReadFile("images/p2.png")
+	// get image form chormadp and convert to base64
+	ctx := context.Background()
+	browser := model.NewBrowser(ctx)
+	defer browser.Close()
+
+	ai, err := model.NewAI()
 	if err != nil {
-		fmt.Println("Error reading image file:", err)
+		fmt.Println("Error initializing AI:", err)
 		return
 	}
 
-	// encodeToBase64 is a helper function to encode bytes to base64.
+	errNav := browser.Navigate("https://parabank.parasoft.com/parabank/index.htm")
+	if errNav != nil {
+		fmt.Println("Error navigating to URL:", errNav)
+		return
+	}
+
+	imagesBytes, err := browser.Screenshot()
+	if err != nil {
+		fmt.Println("Error capturing screenshot:", err)
+		return
+	}
+
+	// encodeToBase64 is a helper function to encode bytes to base64f.
 	encodeToBase64 := func(b []byte) string {
 		return base64.StdEncoding.EncodeToString(b)
 	}
@@ -52,37 +52,65 @@ func main() {
 	imageURL := "data:image/png;base64," + encodeToBase64(imagesBytes)
 	// Call the GetAI function to initialize the AI client and tools.
 
-	model.GetAI(imageURL, "Login to the application")
+	result, err := ai.GetActions(context.Background(), imageURL, "Click inside the username input field")
+	if err != nil {
+		fmt.Println("Error getting AI response:", err)
+		return
+	}
 
-	// Run from this file's folder; workflow.json is two folders above it.
-	// data, err := os.ReadFile("workflows/workflow.json")
-	// if err != nil {
-	// 	fmt.Println("Error reading workflow.json:", err)
-	// 	return
-	// }
+	if len(result.Actions) == 0 {
+		fmt.Println("No action returned")
 
-	// var steps []Step
-	// err = json.Unmarshal(data, &steps)
-	// if err != nil {
-	// 	fmt.Println("Error parsing JSON:", err)
-	// 	return
-	// }
+		if result.Text != "" {
+			fmt.Println("Model message:", result.Text)
+		}
+		return
+	}
 
-	// // Visit the saved steps in order. The underscore ignores the list index.
-	// for _, step := range steps {
-	// 	switch step.Action {
-	// 	case "click":
-	// 		click(step.Target)
-	// 	// TODO: Add a case for the "read" action here.
-	// 	case "read":
-	// 		read(step.Target)
-	// 	case "type":
-	// 		typeText(step.Target, step.Value)
+	action := result.Actions[0]
 
-	// 	default:
-	// 		fmt.Println("Unsupported action:", step.Action)
-	// 		return
-	// 	}
-	// }
+	switch action.FunctionName {
+	case "click":
+		target, targetOk := action.Arguments["target"].(string)
+		x, xOk := action.Arguments["x"].(float64)
+		y, yOk := action.Arguments["y"].(float64)
 
+		if !targetOk || !xOk || !yOk {
+			fmt.Println("Invalid click arguments : expected target, x, and y")
+			return
+		}
+
+		if target == "" {
+			fmt.Println("Click target is empty")
+			return
+		}
+
+		// These bounds match the viewport configured in Navigate().
+		if x < 0 || x > 1920 || y < 0 || y > 1080 {
+			fmt.Println("Click coordinates are outside the viewport.")
+			return
+		}
+
+		err := browser.Click(target, x, y)
+		if err != nil {
+			fmt.Println("Error performing click:", err)
+			return
+		}
+
+	default:
+		fmt.Println("Unknown action:", action.FunctionName)
+	}
+
+	afterBytes, err := browser.Screenshot()
+	if err != nil {
+		fmt.Println("Error capturing screenshot after action:", err)
+		return
+	}
+
+	errWrite := os.WriteFile("after-click.png", afterBytes, 0600)
+	if errWrite != nil {
+		fmt.Println("Error saving screenshot after action:", errWrite)
+		return
+	}
+	fmt.Println("Saved after-click.png")
 }
